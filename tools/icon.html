@@ -1,0 +1,36 @@
+<!doctype html><html><body style="margin:0;background:#000">
+<canvas id="c"></canvas>
+<script type="module">
+import { vehicleSprite, commuterSprite } from '../js/render.js';
+window.draw = (size, maskable) => {
+  const c = document.getElementById('c');
+  c.width = c.height = size;
+  const g = c.getContext('2d');
+  const pad = maskable ? 0 : size * 0.04;
+  const r = maskable ? 0 : size * 0.22;
+  g.clearRect(0, 0, size, size);
+  g.save();
+  g.beginPath(); g.roundRect(pad, pad, size - pad * 2, size - pad * 2, r); g.clip();
+  const grd = g.createLinearGradient(0, 0, 0, size);
+  grd.addColorStop(0, '#5aa0ff'); grd.addColorStop(0.55, '#3d86f0'); grd.addColorStop(0.56, '#93d36c'); grd.addColorStop(1, '#7cc35a');
+  g.fillStyle = grd; g.fillRect(0, 0, size, size);
+  // road
+  g.fillStyle = '#565e70'; g.fillRect(0, size * 0.6, size, size * 0.22);
+  g.strokeStyle = '#fff8e1'; g.lineWidth = size * 0.012; g.setLineDash([size * 0.05, size * 0.04]);
+  g.beginPath(); g.moveTo(0, size * 0.71); g.lineTo(size, size * 0.71); g.stroke(); g.setLineDash([]);
+  const k = maskable ? 0.78 : 1; // keep art inside the maskable safe zone
+  g.translate(size / 2, size / 2); g.scale(k, k); g.translate(-size / 2, -size / 2);
+  // commuters on the sidewalk
+  const cs = [[0, 1], [4, 2], [2, 3]];
+  cs.forEach(([col, look], i) => {
+    const sp = commuterSprite(col, look, Math.round(size * 0.2), true, false);
+    g.drawImage(sp.cv, size * (0.2 + i * 0.13) - sp.ox, size * 0.56 - sp.oy);
+  });
+  // a big toy bus
+  const sp = vehicleSprite('bus', 0, false, 0, Math.round(size * 0.26), true);
+  g.drawImage(sp.cv, size * 0.56 - sp.ox, size * 0.78 - sp.oy);
+  g.restore();
+  return c.toDataURL('image/png');
+};
+window.ready = true;
+</script></body></html>

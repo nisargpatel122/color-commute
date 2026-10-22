@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#3d86f0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Color Commute">
+  <meta name="description" content="Color Commute: clear the jammed parking lot so every commuter rides home in a vehicle of their color.">
+  <title>Color Commute</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/png" href="./icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <canvas id="game" aria-label="Color Commute playfield"></canvas>
+  <div id="safe-probe" aria-hidden="true"></div>
+
+  <header id="hud" class="hidden">
+    <button id="btn-pause" class="round-btn" aria-label="Pause">
+      <svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg>
+    </button>
+    <div id="hud-title"><span id="hud-level">Level 1</span><span id="hud-tag"></span></div>
+    <div class="coins" id="hud-coins"><span class="coin"></span><span class="num">0</span></div>
+  </header>
+  <div id="streak" class="hidden"><span class="label">STREAK</span><span class="x" id="streak-x">x2</span><span class="bar"><i id="streak-bar"></i></span></div>
+  <div id="tip" class="hidden"></div>
+
+  <nav id="boosters" class="hidden">
+    <button class="booster" data-b="bay" aria-label="Extra Bay">
+      <svg viewBox="0 0 40 40"><rect x="5" y="9" width="30" height="24" rx="5" fill="#5f6779"/><path d="M12 13v16M20 13v16M28 13v16" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><circle cx="31" cy="11" r="8" fill="#3fc46a" stroke="#fff" stroke-width="2.5"/><path d="M31 7v8M27 11h8" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
+      <span class="name">Extra Bay</span><span class="price"></span>
+    </button>
+    <button class="booster" data-b="lift" aria-label="Lift">
+      <svg viewBox="0 0 40 40"><path d="M20 3v12" stroke="#5f6779" stroke-width="3" stroke-linecap="round"/><path d="M14 15h12l-2 5h-8z" fill="#ffd23a" stroke="#c99a14" stroke-width="1.5"/><rect x="8" y="22" width="24" height="12" rx="5" fill="#ef4b4b"/><rect x="13" y="19" width="14" height="7" rx="3" fill="#3f5578"/><path d="M6 10l4-4M34 10l-4-4" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
+      <span class="name">Lift</span><span class="price"></span>
+    </button>
+    <button class="booster" data-b="sort" aria-label="Sort">
+      <svg viewBox="0 0 40 40"><circle cx="9" cy="13" r="5" fill="#3d86f0"/><circle cx="20" cy="13" r="5" fill="#3d86f0"/><circle cx="31" cy="13" r="5" fill="#ef4b4b"/><circle cx="9" cy="29" r="5" fill="#ef4b4b"/><circle cx="20" cy="29" r="5" fill="#ffd23a"/><circle cx="31" cy="29" r="5" fill="#ffd23a"/><path d="M36 17v6M33 20l3 3 3-3" stroke="#5f6779" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <span class="name">Sort</span><span class="price"></span>
+    </button>
+    <button class="booster" data-b="shuffle" aria-label="Shuffle">
+      <svg viewBox="0 0 40 40"><path d="M5 12h8c6 0 8 16 14 16h7M5 28h8c6 0 8-16 14-16h7" stroke="#9b5cf0" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M30 7l5 5-5 5M30 23l5 5-5 5" stroke="#9b5cf0" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="name">Shuffle</span><span class="price"></span>
+    </button>
+  </nav>
+
+  <div id="overlay"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

@@ -106,16 +106,17 @@ function placeVehicles(W, H, mask, walls, types, blockBias, rng) {
           const path = pathCells(W, H, fx, fy, dir);
           for (const k of path) if (occ[k] >= 0 || wall[k]) { ok = false; break; }
           if (!ok) continue;
-          // Prefer blocking existing roads, staying compact, and some randomness.
+          // Fill from the inside out (long roads first), block existing
+          // roads, stay compact, plus some randomness.
           let nb = 0;
           for (const k of cells) {
             const x = k % W, y = (k / W) | 0;
             for (let d2 = 0; d2 < 4; d2++) {
               const nx = x + DX[d2], ny = y + DY[d2];
-              if (nx < 0 || ny < 0 || nx >= W || ny >= H || occ[ny * W + nx] >= 0) nb++;
+              if (nx >= 0 && ny >= 0 && nx < W && ny < H && occ[ny * W + nx] >= 0) nb++;
             }
           }
-          score = (blockBias * score) / len + nb * 0.35 / len + rng.next() * 1.6 - path.length * 0.02;
+          score = (blockBias * score) / len + (nb * 0.3) / len + rng.next() * 1.6 + path.length * 0.22;
           if (score > bestScore) { bestScore = score; best = { type, fx, fy, dir, cells, path }; }
         }
       }
