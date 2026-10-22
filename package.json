@@ -1,0 +1,9 @@
+{
+  "name": "color-commute",
+  "private": true,
+  "type": "module",
+  "description": "Color Commute: a static, no-build web game. This file only configures the dev tests.",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  }
+}
