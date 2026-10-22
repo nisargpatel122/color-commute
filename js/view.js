@@ -995,16 +995,17 @@ export class GameView {
     const v = this.s.vehicles[vv.id];
     const topY = y - (sp.top / dpr) * sc - L.cs * 0.12;
     if (vv.nap && vv.mode === 'lot') {
-      ctx.font = `900 ${L.cs * 0.34}px ui-rounded, system-ui, sans-serif`;
+      // a little sleep bubble that gently bobs
+      const r = L.cs * 0.2, bx = x + L.cs * 0.22, by = topY - L.cs * 0.05 + Math.sin(this.time * 2 + vv.zzz) * L.cs * 0.04;
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.beginPath(); ctx.arc(bx, by, r, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(bx - r * 0.9, by + r * 0.9, r * 0.22, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#4a5ab0';
+      ctx.font = `900 ${r * 1.15}px ui-rounded, system-ui, sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      for (let i = 0; i < 3; i++) {
-        const t = (this.time * 0.6 + vv.zzz + i / 3) % 1;
-        ctx.globalAlpha = Math.sin(t * Math.PI);
-        ctx.fillStyle = '#ffffff'; ctx.strokeStyle = 'rgba(40,50,90,0.7)'; ctx.lineWidth = 3;
-        const zx = x + L.cs * (0.1 + t * 0.35), zy = topY - t * L.cs * 0.7;
-        ctx.strokeText('z', zx, zy); ctx.fillText('z', zx, zy);
-      }
-      ctx.globalAlpha = 1;
+      ctx.fillText('z', bx - r * 0.2, by + r * 0.15);
+      ctx.font = `900 ${r * 0.8}px ui-rounded, system-ui, sans-serif`;
+      ctx.fillText('z', bx + r * 0.38, by - r * 0.3);
     }
     if (vv.mode === 'lot' || vv.mode === 'bump') {
       if (v.lock >= 0 && this.s.vehicles[v.lock].state === 'lot') this.padlock(ctx, x - L.cs * 0.25, topY, L.cs * 0.2, this.pairLetter(v.lock));

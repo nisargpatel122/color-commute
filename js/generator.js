@@ -55,7 +55,7 @@ export function paramsFor(N, rng, jitter = 0) {
     runMin: Math.max(2, Math.round(5 - d * 3)),
     runMax: Math.max(3, Math.round(10 - d * 6)),
     blockBias: 0.4 + 2.6 * d,
-    depthBias: 0.15 + 0.08 * d,
+    depthBias: 0.22,
     bus: N < 8 ? 0 : 0.06 + 0.16 * grow,
     van: 0.2 + 0.12 * grow,
   };
@@ -71,7 +71,7 @@ function chooseShape(N, rng) {
 
 function gridFor(count, mix, fill) {
   const avgLen = 1 * (1 - mix.van - mix.bus) + 2 * mix.van + 3 * mix.bus;
-  const need = (count * avgLen) / 0.74 / fill;
+  const need = (count * avgLen) / 0.8 / fill;
   let W = clamp(Math.round(Math.sqrt(need / 1.28)), 4, 12);
   let H = clamp(Math.round(W * 1.28), 5, 15);
   while (W * H < need && (W < 12 || H < 15)) {
@@ -307,7 +307,7 @@ function tryGenerate(N, salt, jitter = 0) {
     for (const v of specV) if (rng.chance(0.28)) v.napping = true;
   }
   if (has('mystery')) {
-    for (const o of inits) if (!freeAtStart(o) && rng.chance(0.55)) specV[o.init].hidden = true;
+    for (const o of inits) if (!freeAtStart(o) && rng.chance(0.4)) specV[o.init].hidden = true;
     for (const g of garages) for (const q of g.queue) if (rng.chance(0.5)) q.hidden = true;
   }
 
@@ -385,9 +385,15 @@ export function generateLevel(N, candidates = 14) {
     jitter = clamp(jitter, -0.85, 0.3);
   }
   if (best) return best;
-  for (let salt = 0; salt < 200; salt++) {
-    const spec = tryGenerate(N, salt, -0.5);
-    if (spec) return spec;
+  // Nothing fair yet: keep easing off until a thoughtful player can win.
+  let fallback = null;
+  for (let salt = 100; salt < 300; salt++) {
+    const spec = tryGenerate(N, salt, -0.85);
+    if (!spec) continue;
+    fallback = fallback || spec;
+    const r = rateLevel(spec);
+    if (r.smart > 0) { spec.rate = r.rate; spec.target = target; return spec; }
   }
+  if (fallback) return fallback;
   throw new Error('could not generate level ' + N);
 }

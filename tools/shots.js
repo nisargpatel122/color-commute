@@ -13,7 +13,7 @@ for (const [name, w, h, dpr, mobile] of sizes) {
   await page.goto('http://localhost:8123/index.html');
   await page.waitForTimeout(800);
   await page.screenshot({ path: `${out}/${name}-title.png` });
-  for (const lv of [1, 9, 37, 60]) {
+  for (const lv of (process.env.LEVELS || '1,9,37,60').split(',').map(Number)) {
     await page.evaluate((l) => window.__cc.startLevel(l), lv);
     await page.evaluate(() => { const o = document.querySelector('#tw-ok'); if (o) o.click(); });
     await page.waitForTimeout(500);

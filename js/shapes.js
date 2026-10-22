@@ -81,13 +81,15 @@ export const SHAPE_UNLOCK = [
 function spiralWalls(W, H) {
   const walls = new Set();
   let x0 = 2, y0 = 2, x1 = W - 3, y1 = H - 3;
-  let side = 0;
-  // Hedge line that winds inward, leaving 2-wide lanes.
+  let side = 0, k = 0;
+  // Hedge line that winds inward, with a gap every few cells so cars parked
+  // inside the spiral still have a straight way out.
+  const add = (x, y) => { if (k++ % 4 !== 2) walls.add(y * W + x); };
   while (x1 - x0 >= 1 && y1 - y0 >= 1) {
-    if (side === 0) { for (let x = x0; x <= x1; x++) walls.add(y0 * W + x); y0 += 3; }
-    else if (side === 1) { for (let y = y0 - 3; y <= y1; y++) walls.add(y * W + x1); x1 -= 3; }
-    else if (side === 2) { for (let x = x1 + 3; x >= x0; x--) walls.add(y1 * W + x); y1 -= 3; }
-    else { for (let y = y1 + 3; y >= y0; y--) walls.add(y * W + x0); x0 += 3; }
+    if (side === 0) { for (let x = x0; x <= x1; x++) add(x, y0); y0 += 3; }
+    else if (side === 1) { for (let y = y0 - 3; y <= y1; y++) add(x1, y); x1 -= 3; }
+    else if (side === 2) { for (let x = x1 + 3; x >= x0; x--) add(x, y1); y1 -= 3; }
+    else { for (let y = y1 + 3; y >= y0; y--) add(x0, y); x0 += 3; }
     side = (side + 1) % 4;
   }
   return [...walls].filter((c) => c >= 0 && c < W * H);

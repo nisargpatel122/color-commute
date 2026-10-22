@@ -51,6 +51,7 @@ test(`levels ${TUT_COUNT + 1}-${LAST}: deterministic, well formed, and won by th
     assert.equal(r.ok, true, `level ${n} replay: ${r.why}`);
     const s = createGame(spec);
     assert.ok(freeVehicles(s).length > 0, `level ${n} has a first move`);
+    assert.ok(spec.rate > 0, `level ${n}: a thoughtful bot wins it sometimes (fair, not cheap)`);
     if (n % 10 === 0) {
       total++;
       const sol = solve(createGame(spec), 6000, 20);
