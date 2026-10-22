@@ -38,7 +38,7 @@ export const store = {
   settings: read(KEYS.settings, DEFAULT_SETTINGS),
   saveProgress() { write(KEYS.progress, this.progress); },
   saveSettings() { write(KEYS.settings, this.settings); },
-  // Removes only this game's own keys. Never localStorage.clear().
+  // Removes only this game's own keys; never wipes the whole shared storage.
   reset() {
     for (const k of Object.values(KEYS)) {
       try { localStorage.removeItem(k); } catch (e) { /* ignore */ }

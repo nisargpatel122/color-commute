@@ -1025,8 +1025,13 @@ export class GameView {
       ctx.fillText('z', bx + r * 0.38, by - r * 0.3);
     }
     if (vv.mode === 'lot' || vv.mode === 'bump') {
-      if (v.lock >= 0 && this.s.vehicles[v.lock].state === 'lot') this.padlock(ctx, x - L.cs * 0.25, topY, L.cs * 0.2, this.pairLetter(v.lock));
-      if (v.key && this.s.vehicles.some((w) => w.lock === v.id && w.state === 'lot')) this.keyIcon(ctx, x + L.cs * 0.2, topY, L.cs * 0.2, this.pairLetter(v.id));
+      const chip = (cx, cy) => {
+        ctx.beginPath(); ctx.arc(cx, cy, L.cs * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff'; ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(40,45,60,0.6)'; ctx.stroke();
+      };
+      if (v.lock >= 0 && this.s.vehicles[v.lock].state === 'lot') { chip(x - L.cs * 0.22, topY); this.padlock(ctx, x - L.cs * 0.22, topY + L.cs * 0.04, L.cs * 0.19, this.pairLetter(v.lock)); }
+      if (v.key && this.s.vehicles.some((w) => w.lock === v.id && w.state === 'lot')) { chip(x + L.cs * 0.22, topY); this.keyIcon(ctx, x + L.cs * 0.25, topY, L.cs * 0.19, this.pairLetter(v.id)); }
     }
   }
 
