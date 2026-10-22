@@ -3,8 +3,10 @@ import { GAME_ID, VERSION, BOOSTERS, COLORS } from './config.js';
 import { store } from './storage.js';
 import { Sound, buzz } from './audio.js';
 import { GameView } from './view.js';
-import { getLevel, TWISTS, TUT_COUNT } from './levels.js';
+import { getLevel, demoLevel, primeLevel, hasLevel, TWISTS, TUT_COUNT } from './levels.js';
 import { cloneState, addBay, sortLine } from './engine.js';
+import { botMove } from './solver.js';
+import { makeRng } from './rng.js';
 
 const $ = (sel) => document.querySelector(sel);
 const P = store.progress, S = store.settings;
@@ -19,7 +21,7 @@ let current = 0;
 
 const view = new GameView($('#game'), {
   sound,
-  vibrate: (p) => buzz(p, S.vibration),
+  vibrate: (p) => buzz(p, S.vibration && !view.demo),
   symbols: () => S.symbols,
   insets: () => {
     const cs = getComputedStyle($('#safe-probe'));
@@ -31,8 +33,11 @@ const view = new GameView($('#game'), {
     };
   },
   firstTouch: () => { sound.unlock(); hideTip(); },
-  onCoins: (n, x, y) => addCoins(n, x, y),
-  onEnd: (won) => (won ? showWin() : showLose()),
+  onCoins: (n, x, y) => { if (!view.demo) addCoins(n, x, y); },
+  onEnd: (won) => {
+    if (view.demo) { setTimeout(() => { if (view.demo) startDemo(); }, 1200); return; }
+    if (won) showWin(); else showLose();
+  },
   onBoosterUsed: (kind) => chargeBooster(kind),
   onPick: () => refreshBoosters(),
 });
@@ -176,8 +181,11 @@ function startLevel(n) {
   screen = 'game';
   hide();
   setHud(true);
+  view.demo = false;
+  sound.quiet = false;
   view.paused = false;
   view.load(spec);
+  banner(n, spec);
   $('#hud-level').textContent = `Level ${n}`;
   const [tag, cls] = levelTag(spec);
   const t = $('#hud-tag');
@@ -199,8 +207,59 @@ function startLevel(n) {
     const unlocked = Object.entries(BOOSTERS).find(([, b]) => b.unlock === n);
     if (unlocked) showTip(`New booster: ${unlocked[1].name}`, unlocked[1].desc + ' Your first one is free!', 5000);
   }
-  // build the next level in the background so it opens instantly
-  setTimeout(() => { try { getLevel(n + 1); } catch (e) { /* ignore */ } }, 1200);
+  prefetch(n + 1);
+}
+
+// Build the next level in a background worker so it opens instantly.
+let worker = null;
+function prefetch(n) {
+  if (hasLevel(n)) return;
+  try {
+    if (!worker) {
+      worker = new Worker('./js/worker.js', { type: 'module' });
+      worker.onmessage = (e) => { if (e.data.spec) primeLevel(e.data.n, e.data.spec); };
+    }
+    worker.postMessage(n);
+  } catch (e) { /* no module workers: the level is built when needed */ }
+}
+
+const SHAPE_NAMES = {
+  rect: 'Classic lot', rounded: 'Comfy lot', circle: 'Round lot', diamond: 'Diamond lot', heart: 'Heart lot',
+  star: 'Star lot', cross: 'Crossroads', ring: 'Ring road', hourglass: 'Hourglass', arrow: 'Arrow lot',
+  house: 'House lot', spiral: 'Spiral garden', maze: 'Hedge maze', letter: 'Letter lot',
+};
+function banner(n, spec) {
+  const old = document.getElementById('banner');
+  if (old) old.remove();
+  const [kind, letter] = (spec.shape || 'rect').split(':');
+  const name = spec.tutorial ? spec.tutorial.title : letter ? `Letter ${letter} lot` : SHAPE_NAMES[kind] || '';
+  const b = document.createElement('div');
+  b.id = 'banner';
+  b.innerHTML = `<div class="b1">Level ${n}</div><div class="b2">${name}</div>`;
+  document.body.appendChild(b);
+  setTimeout(() => b.remove(), 1700);
+}
+
+// Title screen demo: a bot quietly plays a lot behind the menu.
+let demoRng = makeRng(7), demoClock = 0;
+function startDemo() {
+  try {
+    view.load(demoLevel());
+    view.demo = true;
+    view.paused = false;
+    sound.quiet = true;
+    demoClock = 1;
+  } catch (e) { console.error(e); }
+}
+function demoTick(dt) {
+  if (!view.demo || screen !== 'title' || view.s.status !== 'playing') return;
+  demoClock -= dt;
+  if (demoClock > 0) return;
+  demoClock = 0.65 + Math.random() * 0.4;
+  const v = botMove(view.s, demoRng, 0.9);
+  if (!v) return;
+  view.tapId(v.id);
+  if (v.napping) view.tapId(v.id);
 }
 
 function twistIcon(id) {
@@ -221,7 +280,7 @@ function showTitle() {
   screen = 'title';
   setHud(false);
   hideTip();
-  view.paused = true;
+  startDemo();
   const letters = 'Color'.split('').map((ch, i) => `<span style="color:${COLORS[[0, 1, 2, 3, 4][i]].hex}">${ch}</span>`).join('');
   show(`<div class="title-wrap">
       <div class="logo"><span class="l1">${letters}</span><span class="l2">Commute</span></div>
@@ -243,6 +302,7 @@ function showMap() {
   setHud(false);
   hideTip();
   view.paused = true;
+  sound.quiet = false;
   const max = Math.max(P.maxLevel + 15, 30);
   const rowH = 86;
   let nodes = '';
@@ -369,6 +429,7 @@ function showWin() {
   P.bestStreak = Math.max(P.bestStreak || 0, view.bestStreak);
   if (current >= P.maxLevel) P.maxLevel = current + 1;
   P.level = current + 1;
+  const before = P.coins;
   P.coins += reward + streakBonus;
   save();
   setCoins();
@@ -379,14 +440,29 @@ function showWin() {
       <div><span>Level reward</span><span class="amt">+${reward} <span class="coin"></span></span></div>
       <div><span>Streak coins (live)</span><span class="amt">+${view.streakCoins} <span class="coin"></span></span></div>
       ${streakBonus ? `<div><span>Best streak x${view.bestStreak}</span><span class="amt">+${streakBonus} <span class="coin"></span></span></div>` : ''}
-      <div class="total"><span>Coins</span><span class="amt">${P.coins} <span class="coin"></span></span></div>
+      <div class="total"><span>Coins</span><span class="amt"><span id="w-total">${before}</span> <span class="coin"></span></span></div>
     </div>
     <button class="btn green" id="w-next">Next level ▶</button>
     <div class="row"><button class="btn white small" id="w-map">Levels</button><button class="btn white small" id="w-again">Replay</button></div></div>`);
+  countUp($('#w-total'), before, P.coins);
   on('w-next', () => startLevel(current + 1));
   on('w-map', () => showMap());
   on('w-again', () => startLevel(current));
   refreshBoosters();
+}
+
+function countUp(el, from, to) {
+  const t0 = performance.now(), dur = 900;
+  let lastTick = from;
+  const step = (now) => {
+    if (!el.isConnected) return;
+    const u = Math.min(1, (now - t0 - 350) / dur);
+    const v = Math.round(from + (to - from) * Math.max(0, u));
+    el.textContent = v;
+    if (v - lastTick >= 3) { lastTick = v; sound.coin(); }
+    if (u < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 
 // Would this booster get a lost board moving again?
@@ -434,10 +510,11 @@ document.addEventListener('pointerdown', () => sound.unlock(), { once: false, pa
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 
 let last = performance.now();
-let lastStreak = 0;
+let lastStreak = 0, lastRefresh = 0;
 function loop(now) {
   const dt = (now - last) / 1000;
   last = now;
+  demoTick(Math.min(dt, 0.1));
   view.update(dt);
   view.draw();
   if (screen === 'game') {
@@ -449,7 +526,7 @@ function loop(now) {
       if (st !== lastStreak) { $('#streak-x').textContent = 'x' + st; streakEl.classList.remove('pop'); void streakEl.offsetWidth; streakEl.classList.add('pop'); }
     }
     lastStreak = st;
-    if ((now | 0) % 8 === 0) refreshBoosters();
+    if (now - lastRefresh > 250) { lastRefresh = now; refreshBoosters(); }
   } else streakEl.classList.add('hidden');
   requestAnimationFrame(loop);
 }
@@ -458,11 +535,7 @@ function loop(now) {
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});
 }
-// Show the current level behind the title screen as a living backdrop.
-try {
-  view.load(getLevel(Math.max(1, P.level)));
-  current = P.level;
-} catch (e) { console.error(e); }
+current = P.level;
 grantBoosters();
 setCoins();
 showTitle();

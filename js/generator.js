@@ -193,10 +193,10 @@ function assignColors(order, K, rng) {
   order.forEach((o, i) => { o.color = bag[i]; });
 }
 
-function tryGenerate(N, salt, jitter = 0) {
+function tryGenerate(N, salt, jitter = 0, tag = '') {
   // Twists and shape depend only on N; the salt varies layout and line.
-  const lr = makeRng(hashSeed('color-commute-level', N));
-  const rng = makeRng(hashSeed('color-commute', N, salt));
+  const lr = makeRng(hashSeed('color-commute-level' + tag, N));
+  const rng = makeRng(hashSeed('color-commute' + tag, N, salt));
   const P = paramsFor(N, rng, jitter);
   const tw = pickTwists(N, lr, P.breather);
   const has = (id) => tw.list.includes(id);
@@ -368,12 +368,12 @@ export function rateLevel(spec, runs = 12) {
 // Build candidates for level N and keep the one whose bot win rate is closest
 // to the target, easing or tightening difficulty between tries.
 // Deterministic: same N, same level.
-export function generateLevel(N, candidates = 14) {
+export function generateLevel(N, candidates = 14, tag = '') {
   const target = targetWinRate(N);
   let best = null, bestErr = Infinity;
   let found = 0, jitter = 0;
   for (let salt = 0; salt < 100 && found < candidates; salt++) {
-    const spec = tryGenerate(N, salt, jitter);
+    const spec = tryGenerate(N, salt, jitter, tag);
     if (!spec) continue;
     found++;
     const r = rateLevel(spec);
@@ -388,7 +388,7 @@ export function generateLevel(N, candidates = 14) {
   // Nothing fair yet: keep easing off until a thoughtful player can win.
   let fallback = null;
   for (let salt = 100; salt < 300; salt++) {
-    const spec = tryGenerate(N, salt, -0.85);
+    const spec = tryGenerate(N, salt, -0.85, tag);
     if (!spec) continue;
     fallback = fallback || spec;
     const r = rateLevel(spec);

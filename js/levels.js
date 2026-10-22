@@ -41,4 +41,17 @@ export function getLevel(n) {
   return cache.get(n);
 }
 
+// Store a level that was built in the background worker.
+export function primeLevel(n, spec) {
+  if (n > TUT_COUNT && !cache.has(n)) cache.set(n, spec);
+}
+export function hasLevel(n) { return n <= TUT_COUNT || cache.has(n); }
+
+// A separate lot (not one of the real levels) for the title screen demo.
+let demo = null;
+export function demoLevel() {
+  if (!demo) demo = generateLevel(34, 1, 'demo');
+  return demo;
+}
+
 export { TWISTS };

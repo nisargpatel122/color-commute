@@ -8,6 +8,7 @@ export class Sound {
     this.sfxOn = true;
     this.musicOn = true;
     this.music = null;
+    this.quiet = false; // true while the title-screen demo plays
   }
 
   unlock() {
@@ -45,7 +46,7 @@ export class Sound {
     if (on) this.startMusic(); else this.stopMusic();
   }
 
-  get ok() { return this.ctx && this.sfxOn && this.ctx.state === 'running'; }
+  get ok() { return this.ctx && this.sfxOn && !this.quiet && this.ctx.state === 'running'; }
   vary(x, amt = 0.04) { return x * (1 + (Math.random() * 2 - 1) * amt); }
 
   tone({ type = 'sine', f = 440, f2 = null, t = 0, dur = 0.15, vol = 0.3, attack = 0.005, dest = null, q = null, cutoff = null }) {

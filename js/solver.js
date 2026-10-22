@@ -184,13 +184,23 @@ export function solve(s0, budget = 20000, dives = 40) {
 // Otherwise a thoughtful player (chance = skill) digs toward the nearest vehicle
 // of the front color, and a hasty one sends whatever color looks needed soon.
 export function botPlay(s, rng, skill = 0.5) {
-  const look = 6 + Math.round(skill * 24);
   let guard = 0;
   while (s.status === 'playing' && guard++ < 2000) {
+    const v = botMove(s, rng, skill);
+    if (!v) break;
+    drive(s, v.id);
+  }
+  return s.status === 'won';
+}
+
+// The bot's next choice (a free vehicle), or null if nothing can move.
+export function botMove(s, rng, skill = 0.5) {
+  const look = 6 + Math.round(skill * 24);
+  {
     const visible = s.visible ? Math.min(look, s.visible) : look;
     const need = colorNeeds(s, visible);
     const free = freeVehicles(s);
-    if (!free.length) break;
+    if (!free.length) return null;
     const u = s.line[s.lp];
     const bays = s.bayCount - s.bays.slice(0, s.bayCount).filter((x) => x >= 0).length;
     let choice = null;
@@ -217,9 +227,8 @@ export function botPlay(s, rng, skill = 0.5) {
       scored.sort((a, b) => a.sc - b.sc);
       choice = scored[0].v;
     }
-    drive(s, choice.id);
+    return choice;
   }
-  return s.status === 'won';
 }
 
 // Shuffle booster: swap colors among same-sized lot vehicles until a solver

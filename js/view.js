@@ -509,6 +509,12 @@ export class GameView {
     this.streak = now - this.lastExit < STREAK_WINDOW ? this.streak + 1 : 1;
     this.lastExit = now;
     this.bestStreak = Math.max(this.bestStreak, this.streak);
+    if (this.streak >= 5 && this.streak % 5 === 0) {
+      const words = ['Speedy!', 'Super streak!', 'Rush hour hero!', 'Unstoppable!'];
+      const L = this.L;
+      this.text(words[Math.min(words.length - 1, this.streak / 5 - 1)], L.colX + L.colW / 2, L.lotTop + L.lotH * 0.4, '#ffe14d', Math.max(22, L.cs * 0.9));
+      this.sparkle(L.colX + L.colW / 2, L.lotTop + L.lotH * 0.4, '#ffe14d');
+    }
     if (this.streak >= 3) {
       this.hooks.sound.streak(this.streak);
       if (this.streakCoins < 15) {
@@ -694,6 +700,7 @@ export class GameView {
         if (p.ang != null) vv.ang += angDiff(vv.ang, p.ang) * Math.min(1, dt * 18);
         const prog = vv.pd / vv.path.len;
         vv.k = lerp(vv.k0, L.bcs / L.cs, ease(clamp((prog - 0.4) / 0.6, 0, 1)));
+        this.exhaust(vv, dt);
         if (vv.pd >= vv.path.len - 0.01) this.arrive(vv);
       } else if (vv.mode === 'fly') {
         busy = true;
@@ -724,6 +731,7 @@ export class GameView {
           vv.x += vv.speed * dt;
           vv.y = L.streetY;
           vv.ang += angDiff(vv.ang, 0) * Math.min(1, dt * 10);
+          this.exhaust(vv, dt);
           if (vv.x > this.W + L.cs * 4) { vv.mode = 'gone'; }
         }
       }
@@ -800,6 +808,15 @@ export class GameView {
         this.hooks.onEnd(s.status === 'won', this);
       }
     } else if (s.status === 'playing') { this.endTimer = 0; this.confettiDone = false; }
+  }
+
+  exhaust(vv, dt) {
+    vv.puffT = (vv.puffT || 0) - dt;
+    if (vv.puffT > 0 || vv.speed < 20 || this.parts.length > 350) return;
+    vv.puffT = 0.06;
+    const back = (vv.len * this.L.cs * vv.k) / 2;
+    const x = vv.x - Math.cos(vv.ang) * back, y = vv.y - Math.sin(vv.ang) * back * TILT;
+    this.parts.push({ kind: 'puff', x, y, vx: -Math.cos(vv.ang) * 20, vy: -8, t: 0, life: 0.4, r: 2 + Math.random() * 2, color: 'rgba(255,255,255,0.55)' });
   }
 
   wave(vv) {

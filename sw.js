@@ -20,6 +20,7 @@ const FILES = [
   './js/shapes.js',
   './js/solver.js',
   './js/rng.js',
+  './js/worker.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
