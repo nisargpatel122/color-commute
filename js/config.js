@@ -1,6 +1,6 @@
 // Shared constants. GAME_ID must match the repository name.
 export const GAME_ID = 'color-commute';
-export const VERSION = 2;
+export const VERSION = 3;
 
 // 8 commuter colors, each with its own symbol for colorblind play.
 export const COLORS = [

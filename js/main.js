@@ -290,12 +290,50 @@ function showTitle() {
         <button class="btn green big" id="t-play">Play &nbsp;▶&nbsp; Level ${P.level}</button>
         <div class="row"><button class="btn white" id="t-map">Levels</button><button class="btn white" id="t-set">Settings</button></div>
         <button class="btn white small" id="t-how">How to play</button>
+        ${isStandalone() ? '' : '<button class="btn yellow small" id="t-install">Install app</button>'}
       </div>
     </div>`, '');
+  on('t-install', () => installApp(showTitle));
   on('t-play', () => startLevel(P.level));
   on('t-map', () => showMap());
   on('t-set', () => showSettings(showTitle));
   on('t-how', () => showHowTo(showTitle));
+}
+
+// ----------------------------------------------------------------- install --
+// Chrome's own menu can wrongly say "already installed" when another app from
+// the same github.io site is installed, so the game offers its own button.
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installEvt = e;
+});
+window.addEventListener('appinstalled', () => {
+  installEvt = null;
+  toast('Installed! Look for Color Commute on your home screen or in your apps list.');
+});
+function isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true;
+}
+async function installApp(back) {
+  if (installEvt) {
+    const evt = installEvt;
+    installEvt = null;
+    try {
+      evt.prompt();
+      const choice = await evt.userChoice;
+      if (choice && choice.outcome === 'accepted') return;
+    } catch (e) { /* fall through to the help card */ }
+  }
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  show(`<div class="card howto"><h2 style="text-align:center">Install Color Commute</h2>
+    ${ios ? `<ul><li>Tap the <b>Share</b> button (square with an arrow).</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li></ul>`
+      : `<ul>
+      <li>Your phone didn't offer the install just now. <b>Reload this page once</b>, then tap <b>Install app</b> again.</li>
+      <li>If Chrome says it's <b>already installed</b>, swipe up to your <b>apps list</b>. The icon may be there instead of on your home screen. Long-press it and drag it to your home screen.</li>
+      <li>Still nothing? In Chrome tap <b>\u22EE</b> then <b>Add to Home screen</b>.</li></ul>`}
+    <button class="btn green" id="i-ok">OK</button></div>`);
+  on('i-ok', back);
 }
 
 function showMap() {

@@ -1,7 +1,7 @@
 // Color Commute service worker: offline play. Only ever touches caches named
 // "color-commute-v<number>"; caches from other games on this origin are left alone.
 const GAME_ID = 'color-commute';
-const VERSION = 2;
+const VERSION = 3;
 const CACHE = `${GAME_ID}-v${VERSION}`;
 const FILES = [
   './',
