@@ -284,7 +284,7 @@ function showMap() {
 }
 
 function pause() {
-  if (screen !== 'game' || view.ended) return;
+  if ((screen !== 'game' && screen !== 'pause') || view.ended) return;
   view.paused = true;
   screen = 'pause';
   show(`<div class="card"><h1>Paused</h1><p>Level ${current}</p>
@@ -404,7 +404,7 @@ function showLose() {
     const ok = rescues(k) && canAfford(k);
     return `<button class="btn yellow small" id="l-${k}" ${ok ? '' : 'disabled'}>${b.name} — ${free ? 'FREE' : b.cost + ' coins'}</button>`;
   }).join('');
-  show(`<div class="card"><div class="big-icon">\u{1F68F}</div><h1>The stop is jammed!</h1><p>Every bay is full and the rider at the front can’t board.</p>
+  show(`<div class="card"><svg class="twist-icon" viewBox="0 0 96 96" aria-hidden="true"><rect x="45" y="30" width="6" height="60" rx="3" fill="#7d8696"/><circle cx="48" cy="28" r="22" fill="#2f6fe4" stroke="#fff" stroke-width="4"/><text x="48" y="35" text-anchor="middle" font-size="17" font-weight="900" fill="#fff" font-family="system-ui, sans-serif">STOP</text><circle cx="74" cy="66" r="16" fill="#ef4b4b" stroke="#fff" stroke-width="4"/><path d="M68 60l12 12M80 60L68 72" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg><h1>The stop is jammed!</h1><p>Every bay is full and the rider at the front can’t board.</p>
     <button class="btn green" id="l-retry">Retry</button>
     ${opts ? `<p style="margin:14px 0 0">or use a booster:</p>${opts}` : ''}
     <button class="btn white small" id="l-map">Levels</button></div>`);

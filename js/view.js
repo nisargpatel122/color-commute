@@ -511,8 +511,10 @@ export class GameView {
     this.bestStreak = Math.max(this.bestStreak, this.streak);
     if (this.streak >= 3) {
       this.hooks.sound.streak(this.streak);
-      this.streakCoins++;
-      this.hooks.onCoins(1, vv.x, vv.y);
+      if (this.streakCoins < 15) {
+        this.streakCoins++;
+        this.hooks.onCoins(1, vv.x, vv.y);
+      }
     }
   }
 

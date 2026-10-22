@@ -72,19 +72,32 @@ that no later vehicle needs (see below).
 
 ## Difficulty curve
 
-`base = 1 − e^(−N/70)`. Every 5th level is a **hard** spike (+0.15). The level
-after it is a **breather** (−0.22).
+`base = 1 − e^(−N/70)`. Every 5th level is a **hard** spike (+0.15), unless it
+introduces a twist. The level after a spike is a **breather** (−0.22). That
+value sets colors (2→8), bay cap `k` (2→5), how often the line parks ahead,
+how far it reaches back (LIFO), interleaving, run length (long single-color
+runs early, short ones later) and blocking depth. Lot size grows on its own
+steady ramp (≈12 vehicles at the start, up to ~70 on big rectangles).
 
-| d     | colors | vehicles | bay cap k | notes                           |
-|-------|--------|----------|-----------|---------------------------------|
-| < .2  | 2–3    | 8–18     | 2–3       | cars and vans, open layouts     |
-| .2–.5 | 3–5    | 18–35    | 3–4       | buses appear, deeper blocking   |
-| .5–.8 | 5–7    | 35–55    | 4–5       | LIFO line order                 |
-| > .8  | 7–8    | 55–70    | 5         | no spare bay in intended play   |
+**Calibration.** For each level the generator builds candidates (up to 14).
+Bots play each candidate 24 times, at a normal and a thoughtful skill level,
+and the generator keeps the one whose win rate is closest to the target:
+`0.95 − 0.4·(1 − e^(−(N−6)/70))`, −0.2 on hard spikes, +0.12 on breathers,
++0.08 on twist intros, and extra-gentle for levels 7–21. A thoughtful bot must
+win a candidate at least once (no cheap levels). Everything is seeded, so level
+N is always the same.
 
-A balancing bot plays the first 100 levels many times. Tuning aims for:
-tutorials and the first levels ≈ always won, mid levels mostly won, hard
-spikes lost sometimes by a casual bot but never unwinnable.
+**Measured (tools/balance.js, 40 games per level per bot):**
+
+| Levels | casual bot | normal bot | thoughtful bot |
+|--------|-----------:|-----------:|---------------:|
+| 1–10   | 92% | 95% | 100% |
+| 11–25  | 73% | 85% | 98% |
+| 26–50  | 58% | 73% | 88% |
+| 51–75  | 48% | 64% | 82% |
+| 76–100 | 33% | 50% | 78% |
+
+Hard spikes average about 30% for the casual bot, and breathers about 75%.
 
 ## Tutorials (hand made)
 1. Tap to go. 2. Arrows and blocking. 3. Match the colors.
