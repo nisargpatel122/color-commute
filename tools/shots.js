@@ -15,7 +15,7 @@ for (const [name, w, h, dpr, mobile] of sizes) {
   await page.screenshot({ path: `${out}/${name}-title.png` });
   for (const lv of (process.env.LEVELS || '1,9,37,60').split(',').map(Number)) {
     await page.evaluate((l) => window.__cc.startLevel(l), lv);
-    await page.evaluate(() => { const o = document.querySelector('#tw-ok'); if (o) o.click(); });
+    await page.evaluate(() => { for (const id of ['#h-back', '#tw-ok']) { const o = document.querySelector(id); if (o) o.click(); } });
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${out}/${name}-level${lv}.png` });
   }

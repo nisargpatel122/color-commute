@@ -14,7 +14,7 @@ await page.waitForTimeout(400);
 
 // lose on purpose: always send the vehicle whose color is needed last
 await page.evaluate(() => { window.__cc.store.progress.coins = 500; window.__cc.store.progress.maxLevel = 30; window.__cc.startLevel(20); });
-await page.evaluate(() => { const o = document.querySelector('#tw-ok'); if (o) o.click(); });
+await page.evaluate(() => { for (const id of ['#h-back', '#tw-ok']) { const o = document.querySelector(id); if (o) o.click(); } });
 await page.evaluate(async () => {
   const { freeVehicles, colorNeeds } = await import('./js/solver.js');
   const v = window.__cc.view;

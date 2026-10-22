@@ -4,7 +4,7 @@ A bright, toy-like puzzle game about rush hour. A packed parking lot of cars, va
 
 **Play:** https://nisargpatel122.github.io/color-commute/
 
-- Hundreds of levels: 6 hand-made tutorials, then seeded levels (level N is always the same). Lots come in fun shapes: hearts, stars, spirals, hedge mazes, letters and more.
+- Hundreds of levels built from a seed (level N is always the same), getting steadily harder. Lots come in fun shapes: hearts, stars, spirals, hedge mazes, letters and more.
 - Every level is built backwards from a known winning order and checked by the rules engine, so every level can be won.
 - New twists every dozen levels: sleepy drivers, mystery rides, boom gates, garages, valet keys, tour groups and rainy days.
 - Boosters bought with coins you earn in the game (Extra Bay, Lift, Sort, Shuffle). No real money, ads, lives or timers.

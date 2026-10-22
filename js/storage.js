@@ -14,6 +14,7 @@ const DEFAULT_PROGRESS = {
   done: {},          // level -> best coins earned (marks completed)
   free: {},          // booster -> free uses granted on unlock
   seenTwists: [],
+  seenHowTo: false,
   bestStreak: 0,
   wins: 0,
 };

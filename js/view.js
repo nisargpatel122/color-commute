@@ -141,8 +141,10 @@ export class GameView {
     const { W: gw, H: gh } = this.s;
     const cm = clamp(colW / 18, 15, 26);
     const rows = 3;
+    const BIG = 1.7; // the front row of the line is drawn this much bigger
     const rowH = cm * 0.98;
-    const lineH = rows * rowH + cm * 0.55;
+    const rowH0 = cm * BIG * 0.74;
+    const lineH = cm * 0.35 + rowH0 + (rows - 2) * rowH + cm * 1.2;
     const slotW = colW / 6.3;
     const csW = colW / (gw + 1.9);
     // Parked vehicles are as big as the bay width allows, unless the lot
@@ -161,7 +163,7 @@ export class GameView {
     const stackH = lineH + bayH + lane * TILT * 2 + lotH;
     const y0 = top + Math.max(0, (bottom - top - stackH) * 0.45);
     const L = {
-      W, H, colW, colX, cm, rows, rowH, bcs, slotW, bayH, cs, lane,
+      W, H, colW, colX, cm, rows, rowH, rowH0, BIG, bcs, slotW, bayH, cs, lane,
       lineTop: y0, lineBottom: y0 + lineH,
     };
     L.bayTop = L.lineBottom;
@@ -177,10 +179,14 @@ export class GameView {
     L.bayCY = L.bayTop + bayH * 0.5;
     L.spriteS = Math.round(Math.max(cs, bcs) * dpr);
     // the line snakes along the sidewalk; front is at the bottom-left near the bays
-    L.lineLeft = colX + cm * 1.25;
+    L.lineLeft = colX + cm * 1.55;
     L.lineRight = colX + colW - cm * 0.6;
+    L.baseY = L.lineBottom - cm * 0.32;
+    L.perRow0 = Math.max(4, Math.floor((L.lineRight - L.lineLeft) / (cm * BIG * 0.66)) + 1);
+    L.step0 = (L.lineRight - L.lineLeft) / (L.perRow0 - 1);
     L.perRow = Math.max(6, Math.floor((L.lineRight - L.lineLeft) / (cm * 0.6)) + 1);
     L.rStep = (L.lineRight - L.lineLeft) / (L.perRow - 1);
+    L.lineCap = L.perRow0 + (rows - 1) * L.perRow;
     this.L = L;
     if (this.lastS !== L.spriteS || this.lastCm !== cm) { clearSprites(); this.lastS = L.spriteS; this.lastCm = cm; }
     for (const vv of this.vis.values()) this.placeVis(vv);
@@ -219,18 +225,21 @@ export class GameView {
     }
   }
 
+  // Position and size of the rider f places from the front (fractional = walking).
   slotPos(f) {
-    const L = this.L;
     const i0 = Math.floor(f), t = f - i0;
     const a = this.slotXY(i0), b = this.slotXY(i0 + 1);
-    return { x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t) };
+    return { x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t), s: lerp(a.s, b.s, t) };
   }
 
+  // The front row is big and easy to read; the rest of the line snakes behind it.
   slotXY(i) {
     const L = this.L;
-    const r = Math.floor(i / L.perRow), c = i % L.perRow;
-    const x = r % 2 === 0 ? L.lineLeft + c * L.rStep : L.lineRight - c * L.rStep;
-    return { x, y: L.lineBottom - L.cm * 0.32 - r * L.rowH };
+    if (i < L.perRow0) return { x: L.lineLeft + i * L.step0, y: L.baseY, s: L.BIG };
+    const j = i - L.perRow0;
+    const r = 1 + Math.floor(j / L.perRow), c = j % L.perRow;
+    const x = r % 2 === 1 ? L.lineRight - c * L.rStep : L.lineLeft + c * L.rStep;
+    return { x, y: L.baseY - L.rowH0 - (r - 1) * L.rowH, s: 1 };
   }
 
   // ------------------------------------------------------------ background --
@@ -749,7 +758,7 @@ export class GameView {
           const e = this.boardQ.shift();
           const from = this.slotPos(Math.max(0, e.ci - this.vfShow));
           const r = this.riders[e.ci];
-          this.hops.push({ ci: e.ci, id: e.id, x0: from.x, y0: from.y, t: -k * 0.05, c: r.c, look: r.look });
+          this.hops.push({ ci: e.ci, id: e.id, x0: from.x, y0: from.y, s: from.s, t: -k * 0.05, c: r.c, look: r.look });
           this.vf = e.ci + 1;
           k++;
         }
@@ -887,8 +896,8 @@ export class GameView {
       const u = ease(Math.min(1, h.t));
       const tx = tv.x, ty = tv.y - L.bcs * 0.3;
       const x = lerp(h.x0, tx, u), y = lerp(h.y0, ty, u) - Math.sin(u * Math.PI) * L.cm * 1.3;
-      const sc = 1 - u * 0.45;
-      const sp = commuterSprite(h.c, h.look, H, this.hooks.symbols(), false);
+      const sc = (1 - u * 0.6) * (h.s || 1) / L.BIG;
+      const sp = commuterSprite(h.c, h.look, Math.round(L.cm * L.BIG * dpr), this.hooks.symbols(), false);
       const w = (sp.cv.width / dpr) * sc, hh = (sp.cv.height / dpr) * sc;
       ctx.drawImage(sp.cv, x - (sp.ox / dpr) * sc, y - (sp.oy / dpr) * sc, w, hh);
     }
@@ -945,8 +954,8 @@ export class GameView {
 
   drawLine(ctx) {
     const L = this.L, s = this.s, dpr = this.dpr;
-    const H = Math.round(L.cm * dpr);
-    const cap = L.rows * L.perRow;
+    const H = Math.round(L.cm * dpr), HB = Math.round(L.cm * L.BIG * dpr);
+    const cap = L.lineCap;
     const total = this.riders.length;
     const sym = this.hooks.symbols();
     const first = this.vf;
@@ -958,15 +967,18 @@ export class GameView {
       if (f > cap - 1) continue;
       const p = this.slotPos(Math.max(0, f));
       const moving = Math.abs(this.vf - this.vfShow) > 0.02;
-      const bob = moving ? Math.abs(Math.sin(this.time * 14 + i)) * L.cm * 0.12 : Math.sin(this.time * 2 + i * 0.7) * L.cm * 0.02;
+      const bob = (moving ? Math.abs(Math.sin(this.time * 14 + i)) * L.cm * 0.12 : Math.sin(this.time * 2 + i * 0.7) * L.cm * 0.02) * p.s;
       const hop = r.hop ? Math.sin(r.hop * Math.PI) * L.cm * 0.5 : 0;
       const hidden = s.visible && i - first >= s.visible;
-      const sp = commuterSprite(r.c, r.look, H, sym, hidden);
-      ctx.drawImage(sp.cv, p.x - sp.ox / dpr, p.y - sp.oy / dpr - bob - hop, sp.cv.width / dpr, sp.cv.height / dpr);
+      if (i === first && f < 0.6) this.frontMarker(ctx, p, r, hidden);
+      const big = p.s > 1.2;
+      const sp = commuterSprite(r.c, r.look, big ? HB : H, sym, hidden);
+      const k = big ? p.s / L.BIG : p.s;
+      ctx.drawImage(sp.cv, p.x - (sp.ox / dpr) * k, p.y - (sp.oy / dpr) * k - bob - hop, (sp.cv.width / dpr) * k, (sp.cv.height / dpr) * k);
       if (r.group && r.gk < r.group - 1 && i + 1 < last) {
         const q = this.slotPos(Math.max(0, f + 1));
-        ctx.strokeStyle = '#ffe3c4'; ctx.lineWidth = Math.max(2, L.cm * 0.12); ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(p.x, p.y - L.cm * 0.36 - bob); ctx.lineTo(q.x, q.y - L.cm * 0.36); ctx.stroke();
+        ctx.strokeStyle = '#ffe3c4'; ctx.lineWidth = Math.max(2, L.cm * 0.12 * p.s); ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(p.x, p.y - L.cm * 0.36 * p.s - bob); ctx.lineTo(q.x, q.y - L.cm * 0.36 * q.s); ctx.stroke();
       }
     }
     const more = total - first - cap;
@@ -979,6 +991,26 @@ export class GameView {
       ctx.fillStyle = '#fff';
       ctx.fillText('+' + more, p.x, p.y - L.cm * 0.87);
     }
+  }
+
+  // Spotlight and a "next" bubble showing who boards next, so the front of
+  // the line is easy to find at a glance.
+  frontMarker(ctx, p, r, hidden) {
+    const L = this.L, cm = L.cm * p.s;
+    const pulse = 0.5 + 0.5 * Math.sin(this.time * 4);
+    ctx.fillStyle = `rgba(255,236,120,${0.45 + pulse * 0.25})`;
+    ctx.beginPath(); ctx.ellipse(p.x, p.y, cm * 0.5, cm * 0.17, 0, 0, Math.PI * 2); ctx.fill();
+    if (hidden) return;
+    const c = COLORS[r.c];
+    const R = L.cm * 0.62;
+    const bx = p.x, by = p.y - cm * 1.12 - R - Math.abs(Math.sin(this.time * 3)) * L.cm * 0.15;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.moveTo(bx - R * 0.3, by + R * 0.8); ctx.lineTo(bx, by + R * 1.35); ctx.lineTo(bx + R * 0.3, by + R * 0.8); ctx.fill();
+    ctx.beginPath(); ctx.arc(bx, by, R, 0, Math.PI * 2); ctx.fill();
+    ctx.lineWidth = Math.max(2, R * 0.16); ctx.strokeStyle = c.dark; ctx.stroke();
+    symbolPath(ctx, c.sym, bx, by, R * 0.62);
+    ctx.fillStyle = c.hex; ctx.fill();
+    ctx.lineWidth = Math.max(1, R * 0.08); ctx.strokeStyle = c.dark; ctx.stroke();
   }
 
   drawVehicle(ctx, vv) {

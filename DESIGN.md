@@ -72,36 +72,37 @@ that no later vehicle needs (see below).
 
 ## Difficulty curve
 
-`base = 1 − e^(−N/70)`. Every 5th level is a **hard** spike (+0.15), unless it
-introduces a twist. The level after a spike is a **breather** (−0.22). That
-value sets colors (2→8), bay cap `k` (2→5), how often the line parks ahead,
-how far it reaches back (LIFO), interleaving, run length (long single-color
-runs early, short ones later) and blocking depth. Lot size grows on its own
-steady ramp (≈12 vehicles at the start, up to ~70 on big rectangles).
+There are no tutorial levels: brand-new players see a short "How to play" card
+once, and levels 1–3 are a little gentler because they double as the
+introduction.
+
+`base = 1 − e^(−N/40)`, `d = 0.1 + base`. Every 5th level is a **hard** spike
+(+0.15), unless it introduces a twist. The level after a spike is a
+**breather** (−0.2). `d` sets colors (3→8), bay cap `k` (2→5), how often the
+line parks ahead, how far it reaches back (LIFO), interleaving, run length
+(long single-color runs early, short ones later) and blocking depth. Lot size
+grows on its own steady ramp (≈16 vehicles at level 1, up to ~70 on big
+rectangles).
 
 **Calibration.** For each level the generator builds candidates (up to 14).
 Bots play each candidate 24 times, at a normal and a thoughtful skill level,
 and the generator keeps the one whose win rate is closest to the target:
-`0.95 − 0.4·(1 − e^(−(N−6)/70))`, −0.2 on hard spikes, +0.12 on breathers,
-+0.08 on twist intros, and extra-gentle for levels 7–21. A thoughtful bot must
-win a candidate at least once (no cheap levels). Everything is seeded, so level
-N is always the same.
+`0.8 − 0.46·(1 − e^(−(N−1)/45))`, −0.2 on hard spikes, +0.12 on breathers,
++0.08 on twist intros. **Hard but never cheap:** the thoughtful bot must win a
+candidate at least a quarter of the time or it is thrown away. Everything is
+seeded, so level N is always the same.
 
 **Measured (tools/balance.js, 40 games per level per bot):**
 
 | Levels | casual bot | normal bot | thoughtful bot |
 |--------|-----------:|-----------:|---------------:|
-| 1–10   | 92% | 95% | 100% |
-| 11–25  | 73% | 85% | 98% |
-| 26–50  | 58% | 73% | 88% |
-| 51–75  | 48% | 64% | 82% |
-| 76–100 | 33% | 50% | 78% |
+| 1–10   | 56% | 74% | 80% |
+| 11–25  | 33% | 48% | 73% |
+| 26–50  | 29% | 45% | 61% |
+| 51–75  | 27% | 41% | 52% |
+| 76–100 | 22% | 34% | 49% |
 
-Hard spikes average about 30% for the casual bot, and breathers about 75%.
-
-## Tutorials (hand made)
-1. Tap to go. 2. Arrows and blocking. 3. Match the colors.
-4. Vans and buses. 5. Only five bays. 6. Dig out what you need.
+Hard spikes average about 19% for the casual bot, and breathers about 42%.
 
 ## Twists (new one every ~12 levels, each with an intro card)
 
@@ -110,7 +111,7 @@ Hard spikes average about 30% for the casual bot, and breathers about 75%.
 | 13 | **Sleepy drivers** | First tap wakes the driver, second drives. | No change to the rules. |
 | 25 | **Mystery rides** | Color hidden (gray, "?") until the path is clear. | Information only. |
 | 37 | **Boom gates** | A barrier on a lane opens after X vehicles have left. | X ≤ the exit index of every vehicle in the intended solution whose path crosses it. |
-| 49 | **Garages** | When the space in front is empty, the next queued vehicle rolls out. | Spawn cells are a vehicle's own footprint, which only earlier-leaving vehicles needed. Spawns share its path. |
+| 49 | **Garages** | When the space in front is empty, the next queued vehicle rolls out. | Spawn cells are a vehicle's own footprint and spawns share its road; each spawn leaves before any later vehicle that needs those cells. |
 | 61 | **Valet keys** *(original)* | A padlocked vehicle can't move until its key vehicle leaves. | The key leaves before the lock in the intended order. |
 | 73 | **Tour groups** *(original)* | 2–3 friends board together and need that many free seats in one vehicle. | The line is generated with the same rule. |
 | 86 | **Rainy days** *(original)* | Umbrellas hide the colors of everyone past the first few in line. | Information only. |

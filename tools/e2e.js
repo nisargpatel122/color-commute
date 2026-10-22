@@ -12,7 +12,7 @@ await page.waitForTimeout(500);
 for (const lv of (process.argv[2] || '1,2,3,4,5,6,7,13').split(',').map(Number)) {
   await page.evaluate((l) => window.__cc.startLevel(l), lv);
   await page.waitForTimeout(200);
-  await page.evaluate(() => { const o = document.querySelector('#tw-ok'); if (o) o.click(); });
+  await page.evaluate(() => { for (const id of ['#h-back', '#tw-ok']) { const o = document.querySelector(id); if (o) o.click(); } });
   const sol = await page.evaluate(() => window.__cc.view.spec.solution || null);
   let moves = sol;
   if (!moves) {
@@ -44,7 +44,7 @@ for (const lv of (process.argv[2] || '1,2,3,4,5,6,7,13').split(',').map(Number))
 }
 // frame timing on a big level
 await page.evaluate(() => window.__cc.startLevel(120));
-await page.evaluate(() => { const o = document.querySelector('#tw-ok'); if (o) o.click(); });
+await page.evaluate(() => { for (const id of ['#h-back', '#tw-ok']) { const o = document.querySelector(id); if (o) o.click(); } });
 const t = await page.evaluate(() => {
   const v = window.__cc.view;
   const n = v.s.vehicles.length, riders = v.riders.length;

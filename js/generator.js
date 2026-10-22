@@ -27,28 +27,28 @@ const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const INTRO_LEVELS = new Set(TWISTS.map((t) => t.level));
 
 export function difficulty(N) {
-  const base = 1 - Math.exp(-N / 70);
+  const base = 1 - Math.exp(-N / 40);
   // A level that introduces a twist is never also a hard spike.
   const hard = N % 5 === 0 && !INTRO_LEVELS.has(N);
-  const breather = N % 5 === 1 && N > 10;
-  const d = clamp(base + (hard ? 0.15 : 0) - (breather ? 0.22 : 0), 0.04, 1);
+  const breather = N % 5 === 1 && N > 5;
+  const d = clamp(0.1 + base + (hard ? 0.15 : 0) - (breather ? 0.2 : 0), 0.08, 1);
   return { d, hard, breather };
 }
 
 export function paramsFor(N, rng, jitter = 0) {
   const dd = difficulty(N);
   const { hard, breather } = dd;
-  const d = clamp(dd.d + jitter, 0.03, 1);
+  const d = clamp(dd.d + jitter, 0.05, 1);
   // Lot size grows steadily with N; jitter only changes how tricky it is.
-  const grow = 1 - Math.exp(-Math.max(0, N - 6) / 80);
+  const grow = 1 - Math.exp(-N / 55);
   // Much-too-hard candidates also get a slightly smaller lot.
-  const size = (breather ? 0.7 : hard ? 1.05 : 1) * clamp(1 + (jitter + 0.3) * 0.5, 0.72, 1);
-  const minColors = 2 + Math.floor(grow * 3.5);
+  const size = (breather ? 0.75 : hard ? 1.05 : 1) * clamp(1 + (jitter + 0.3) * 0.5, 0.72, 1);
+  const minColors = 3 + Math.floor(grow * 3.6);
   return {
     d, hard, breather,
-    colors: clamp(Math.round(2 + d * 5.4), minColors, 8),
-    count: clamp(Math.round((12 + grow * 56 + rng.next() * 6) * size), 8, 72),
-    cap: d < 0.22 ? 2 : d < 0.5 ? 3 : d < 0.8 ? 4 : 5,
+    colors: clamp(Math.round(2.5 + d * 5.4), minColors, 8),
+    count: clamp(Math.round((16 + grow * 54 + rng.next() * 6) * size), 10, 72),
+    cap: d < 0.2 ? 2 : d < 0.45 ? 3 : d < 0.72 ? 4 : 5,
     pPark: 0.05 + 0.3 * d,
     lifo: 0.05 + 0.4 * d,
     interleave: 0.1 + 0.4 * d,
@@ -56,8 +56,8 @@ export function paramsFor(N, rng, jitter = 0) {
     runMax: Math.max(3, Math.round(10 - d * 6)),
     blockBias: 0.4 + 2.6 * d,
     depthBias: 0.22,
-    bus: N < 8 ? 0 : 0.06 + 0.16 * grow,
-    van: 0.2 + 0.12 * grow,
+    bus: N < 3 ? 0 : 0.08 + 0.14 * grow,
+    van: 0.22 + 0.1 * grow,
   };
 }
 
@@ -346,13 +346,16 @@ function tryGenerate(N, salt, jitter = 0, tag = '') {
 // spikes on every 5th level and a breather right after.
 export function targetWinRate(N) {
   const { hard, breather } = difficulty(N);
-  let t = 0.95 - 0.4 * (1 - Math.exp(-Math.max(0, N - 6) / 70));
+  let t = 0.8 - 0.46 * (1 - Math.exp(-(N - 1) / 45));
   if (hard) t -= 0.2;
   if (breather) t += 0.12;
   if (TWISTS.some((x) => x.level === N)) t += 0.08;
-  if (N < 22) t += 0.06 * (1 - (N - 7) / 15);
-  return clamp(t, 0.25, 0.97);
+  if (N <= 3) t += 0.06 * (4 - N); // the first lots double as the introduction
+  return clamp(t, 0.15, 0.97);
 }
+
+// A thoughtful bot must win at least this share of tries: hard, never cheap.
+const MIN_SMART = 0.25;
 
 export function rateLevel(spec, runs = 12) {
   let w = 0, smart = 0;
@@ -379,10 +382,10 @@ export function generateLevel(N, candidates = 14, tag = '') {
     const r = rateLevel(spec);
     const err = Math.abs(r.rate - target);
     // Fairness: a thoughtful player must be able to win it sometimes.
-    if (r.smart > 0 && err < bestErr) { bestErr = err; best = spec; spec.rate = r.rate; spec.target = target; }
+    if (r.smart >= MIN_SMART && err < bestErr) { bestErr = err; best = spec; spec.rate = r.rate; spec.target = target; }
     if (best && err < 0.05) break;
     jitter += clamp((r.rate - target) * 0.45, -0.12, 0.08);
-    jitter = clamp(jitter, -0.85, 0.3);
+    jitter = clamp(jitter, -0.85, 0.5);
   }
   if (best) return best;
   // Nothing fair yet: keep easing off until a thoughtful player can win.
@@ -392,7 +395,7 @@ export function generateLevel(N, candidates = 14, tag = '') {
     if (!spec) continue;
     fallback = fallback || spec;
     const r = rateLevel(spec);
-    if (r.smart > 0) { spec.rate = r.rate; spec.target = target; return spec; }
+    if (r.smart >= MIN_SMART) { spec.rate = r.rate; spec.target = target; return spec; }
   }
   if (fallback) return fallback;
   throw new Error('could not generate level ' + N);

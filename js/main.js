@@ -3,7 +3,8 @@ import { GAME_ID, VERSION, BOOSTERS, COLORS } from './config.js';
 import { store } from './storage.js';
 import { Sound, buzz } from './audio.js';
 import { GameView } from './view.js';
-import { getLevel, demoLevel, primeLevel, hasLevel, TWISTS, TUT_COUNT } from './levels.js';
+import { getLevel, demoLevel, primeLevel, hasLevel, TWISTS } from './levels.js';
+import { difficulty } from './generator.js';
 import { cloneState, addBay, sortLine } from './engine.js';
 import { botMove } from './solver.js';
 import { makeRng } from './rng.js';
@@ -165,7 +166,6 @@ bar.addEventListener('click', (e) => {
 
 // ------------------------------------------------------------------ levels --
 function levelTag(spec) {
-  if (spec.tutorial) return ['Tutorial', 'easy'];
   if (spec.intro) return ['New!', 'twist'];
   if (spec.hard) return ['Hard', ''];
   if (spec.breather) return ['Breather', 'easy'];
@@ -195,9 +195,10 @@ function startLevel(n) {
   refreshBoosters();
   tipEl.dataset.sticky = '0';
   hideTip();
-  if (spec.tutorial) {
-    tipEl.dataset.sticky = '0';
-    showTip(spec.tutorial.title, spec.tutorial.tip);
+  if (!P.seenHowTo && !P.wins) {
+    // Brand-new players get the rules once, instead of tutorial levels.
+    view.paused = true;
+    showHowTo(() => { P.seenHowTo = true; save(); hide(); screen = 'game'; view.paused = false; });
   } else if (spec.intro && !P.seenTwists.includes(spec.intro)) {
     const tw = TWISTS.find((x) => x.id === spec.intro);
     view.paused = true;
@@ -232,7 +233,7 @@ function banner(n, spec) {
   const old = document.getElementById('banner');
   if (old) old.remove();
   const [kind, letter] = (spec.shape || 'rect').split(':');
-  const name = spec.tutorial ? spec.tutorial.title : letter ? `Letter ${letter} lot` : SHAPE_NAMES[kind] || '';
+  const name = letter ? `Letter ${letter} lot` : SHAPE_NAMES[kind] || '';
   const b = document.createElement('div');
   b.id = 'banner';
   b.innerHTML = `<div class="b1">Level ${n}</div><div class="b2">${name}</div>`;
@@ -314,7 +315,7 @@ function showMap() {
     const done = P.done[i] != null;
     const locked = i > P.maxLevel;
     const tw = TWISTS.find((t) => t.level === i);
-    let cls = 'node' + (done ? ' done' : '') + (locked ? ' locked' : '') + (i === P.level && !locked ? ' current' : '') + (i % 5 === 0 && i > TUT_COUNT ? ' hard' : '');
+    let cls = 'node' + (done ? ' done' : '') + (locked ? ' locked' : '') + (i === P.level && !locked ? ' current' : '') + (difficulty(i).hard ? ' hard' : '');
     nodes += `<button class="${cls}" data-l="${i}" style="top:${y}px;--x:${x}px">${i}${tw ? `<span class="badge">${tw.name}</span>` : ''}</button>`;
   }
   const h = max * rowH + 20;
